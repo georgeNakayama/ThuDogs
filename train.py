@@ -11,10 +11,18 @@ import jittor.transform as trans
 
 jt.flags.use_cuda = 1 # if jt.flags.use_cuda = 1 will use gpu
 
-def train(model, train_loader, optimizer, epoch):
+def cust_scheduler(opt, iter, epoch, max_iter, batch_size):
+    if(epoch * max_iter + iter) * batch_size >= 50000: 
+        opt.lr /= 10
+    elif (epoch * max_iter + iter) * batch_size >= 32000: 
+        opt.lr /= 10
+    
+
+def train(model, train_loader, optimizer, epoch, init_lr, batch_size):
     model.train()
     max_iter = len(train_loader)
     for batch_idx, (inputs, targets) in enumerate(train_loader):
+        cust_scheduler(optimizer, batch_idx, epoch, max_iter, batch_size)
         outputs = model(inputs)
         loss = nn.cross_entropy_loss(outputs, targets)
         optimizer.step (loss)
@@ -33,7 +41,7 @@ def val(model, val_loader, epoch):
     total_num = 0
     for batch_idx, (inputs, targets) in enumerate(val_loader):
         batch_size = inputs.shape[0]
-        outputs = model(jt.permute(inputs, (0, 3, 1, 2)))
+        outputs = model(inputs)
         pred = np.argmax(outputs.data, axis=1)
         acc = np.sum(targets.data==pred)
         total_acc += acc
@@ -47,21 +55,21 @@ def val(model, val_loader, epoch):
 
 def main ():
     batch_size = 128
-    learning_rate = 0.1
+    init_lr = 0.1
     momentum = 0.9
     weight_decay = 1e-4
-    epochs = 5
+    epochs = 50
     train_dir = '/mnt/disk/wang/THD-datasets/processed_tsinghuadogs/train'
     val_dir = '/mnt/disk/wang/THD-datasets/processed_tsinghuadogs/val'
     transform = trans.Compose([trans.Resize(224), trans.RandomHorizontalFlip(0.5), trans.ImageNormalize(mean=[0.5], std=[0.5])])
     train_loader = ImageFolder(train_dir, transform=transform).set_attrs(batch_size=batch_size, shuffle=True)
-    val_loader = ImageFolder(val_dir, transform=trans.Resize(224)).set_attrs(batch_size=batch_size, shuffle=False)
+    val_loader = ImageFolder(val_dir, transform=trans.Compose([trans.Resize(224), trans.ImageNormalize(mean=[0.5], std=[0.5])])).set_attrs(batch_size=batch_size, shuffle=True)
 
 
     model = Rnet50()
-    optimizer = nn.SGD(model.parameters(), learning_rate, momentum, weight_decay)
+    optimizer = nn.SGD(model.parameters(), init_lr, momentum, weight_decay)
     for epoch in range(epochs):
-        train(model, train_loader, optimizer, epoch)
+        train(model, train_loader, optimizer, epoch, init_lr, batch_size)
         val(model, val_loader, epoch)
 
 if __name__ == '__main__':
