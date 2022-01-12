@@ -1,25 +1,11 @@
 import shutil 
 import numpy as np 
-import urllib.request 
 import os
-from tqdm import tqdm
 from PIL import Image, ImageDraw
 from lib.datasets.annotation import Annotation
 from lib.datasets.transforms import Compose, Normalize
 from jittor.dataset import Dataset
 from lib.utils import DATASETS
-
-
-class DownloadProgressBar(tqdm):
-    def update_to(self, b=1, bsize=1, tsize=None):
-        if tsize is not None:
-            self.total = tsize
-        self.update(b * bsize - self.n)
-
-def download_url(url, output_path):
-    with DownloadProgressBar(unit='B', unit_scale=True,
-                             miniters=1, desc=url.split('/')[-1]) as t:
-        urllib.request.urlretrieve(url, filename=output_path, reporthook=t.update_to)
 
 @DATASETS.register_module()
 class TsinghuaDogs(Dataset):
@@ -116,29 +102,6 @@ class TsinghuaDogs(Dataset):
         im = Image.open(image_path).convert('RGB')
         anno = Annotation(path=annotation_path)
         return im, anno
-
-
-
-def unzip_files(dest_path, filenames):
-    print('-------unpacking train validation lists-------')
-    shutil.unpack_archive('TrainValSplit.zip', dest_path + 'tsinghua-dogs-data')
-    print('-------unpacking low res images-------')
-    shutil.unpack_archive(filenames[0], dest_path + 'tsinghua-dogs-data')
-    print('-------unpacking low res annotatios-------')
-    shutil.unpack_archive(filenames[1], dest_path + 'tsinghua-dogs-data')
-    
-def download_files():
-    #resources=[images, labels]
-    resources=[
-        'https://cloud.tsinghua.edu.cn/f/80013ef29c5f42728fc8/?dl=1', 
-        'https://cg.cs.tsinghua.edu.cn/ThuDogs/low-annotations.zip'
-        ]
-
-    test_val_split='https://cg.cs.tsinghua.edu.cn/ThuDogs/TrainValSplit.zip'
-
-    download_url(test_val_split, 'TrainValSplit.zip')
-    download_url(resources[0], 'low-res-images.zip')
-    download_url(resources[1], 'low-res-annotations.zip')
 
 
 if __name__ == '__main__':
