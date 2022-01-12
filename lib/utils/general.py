@@ -32,6 +32,17 @@ def jigsaw_generator(images, n=1):
             temp = images_cp[..., idxes[idx][0]: idxes[idx][0]+ 1 * patch_size, idxes[idx][1]: idxes[idx][1] + 1 * patch_size]
             images[..., i * patch_size: (i + 1) * patch_size, j * patch_size: (j + 1)* patch_size] = temp
     return images
+
+def build_params_dict(model, lrs=None):
+    if lrs is None:
+        return model.parameters()
+    params = model.params_dict()
+    assert isinstance(lrs, dict), 'lrs must be in dictionary with the keys being the parameter group name and value being the learing rate desired.'
+    for param in params:
+        if param['name'] in lrs.keys():
+            param['lr'] = lrs[param['name']]
+    return params
+
 if __name__ == '__main__':
     path = '/mnt/disk/wang/THD-datasets/tsinghua-dogs-data/images/200-n000008-Airedale/n107026.jpg'
     im = Image.open(path)

@@ -109,6 +109,17 @@ class Rnet(nn.Module):
         return nn.Sequential(*network)
 
 
+    def params_dict(self):
+        lst = [
+            {'name': 'conv1', 'params': self.conv1.parameters()}, 
+            {'name': 'layer1', 'params': self.layer1.parameters()},
+            {'name': 'layer2', 'params': self.layer2.parameters()},
+            {'name': 'layer3', 'params': self.layer3.parameters()},
+            {'name': 'layer4', 'params': self.layer4.parameters()},
+            {'name': 'fc', 'params': self.fc.parameters()}
+            ]
+        return lst
+
     def execute(self, x):
         x = self.conv1(x)
         x = self.bn1(x)

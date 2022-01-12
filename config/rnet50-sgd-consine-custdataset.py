@@ -1,6 +1,6 @@
 exp_name = 'rnet50-sgd-consine-custdataset-500-epochs'
 batch_size = 64
-max_epochs = 500
+max_epoch = 500
 save_interval = 25
 val_interval = 1
 save_dir = 'Tsinghua-dogs/saved_weights/'
@@ -14,12 +14,19 @@ train_dataset = dict(
     batch_size = 64
 )
 
-transforms = [
+train_transforms = [
     'Rotate',
     'HorizontalFlip',
     'ColorAugmentation',
     'VerticalFlip',
     'Blur',
+    dict(
+        type='Resize',
+        shape = 224
+    )
+]
+
+val_transforms = [
     dict(
         type='Resize',
         shape = 224
@@ -49,3 +56,5 @@ scheduler = dict(
     T_mult = 2,
     start_warmup_lr = 1e-5
 )
+
+resume_path = '/mnt/disk/wang/ThuDogs/runs/rnet50-sgd-consine-custdataset-500-epochs/checkpoints/ckpt_100.pkl'

@@ -59,7 +59,7 @@ class Warmup:
             if by_epoch:
                 self._update_lr(epochs, self.get_lr)
             else:
-                self._update_lr(iters / total_len, self.get_lr) 
+                self._update_lr((iters + (epochs * total_len))/ total_len, self.get_lr) 
 
 @SCHEDULERS.register_module()
 class CosineAnnealingLR(Warmup):
