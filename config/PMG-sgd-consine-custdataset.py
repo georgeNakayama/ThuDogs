@@ -1,10 +1,10 @@
-exp_name = 'PMG-sgd-consine-custdataset-300-epochs'
+exp_name = 'PMG-sgd-consine-custdataset-20-epochs'
 batch_size = 16
-max_epoch = 300
+max_epoch = 20
 save_interval = 1
 val_interval = 1
-save_dir = 'Tsinghua-dogs/saved_weights/'
-work_dir = 'Tsinghua-dogs/runs/'
+save_dir = 'ThuDogs/saved_weights/'
+work_dir = 'ThuDogs/runs/'
 num_classes=130
 lrs = dict(classifier_concat = 0.002, 
         conv_block1= 0.002,
