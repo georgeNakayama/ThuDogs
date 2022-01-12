@@ -1,5 +1,8 @@
 from jittor import nn
 import jittor as jt
+from lib.utils import MODELS
+
+__all__ = ['Rnet18', 'Rnet34', 'Rnet50', 'Rnet101', 'Rnet152']
 
 def conv1x1(inplanes, outplanes, stride=1, padding=0):
     return nn.Conv2d(inplanes, outplanes, kernel_size=1, stride=stride, padding=padding)
@@ -73,10 +76,12 @@ class BottleNeck(nn.Module):
         out = self.relu(out)
         return out
 
+@MODELS.register_module()
 class Rnet(nn.Module):
-    def __init__(self, block, layers, in_channels=3, num_classes=130):
+    def __init__(self, block, layers, in_channels=3, num_classes=130, out_stages=None):
         super().__init__()
         self.inplanes=64
+        self.out_stages = out_stages
 
         self.conv1=nn.Conv2d(in_channels, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1=nn.BatchNorm2d(64)
@@ -118,29 +123,52 @@ class Rnet(nn.Module):
         out = self.avg_pool(x5)
         out = jt.reshape(out, (out.shape[0],-1))
         out = self.fc(out)
-        return out
+        if self.out_stages is None:
+            return out
+        else: 
+            outs = [x1, x2, x3, x4, x5]
+            return tuple([outs[i - 1] for i in self.out_stages])
 
-def _rnet(block, layers, in_channels=3, num_classes=130):
-    model = Rnet(block, layers, in_channels=in_channels, num_classes=num_classes)
+def _rnet(block, layers, in_channels=3, num_classes=1000, out_stages=None):
+    model = Rnet(block, layers, in_channels=in_channels, num_classes=num_classes, out_stages=out_stages)
     return model
 
-def Rnet18():
-    return _rnet(BasicBlock, [2, 2, 2, 2])
+@MODELS.register_module()
+def Rnet18(pretrained=False, **kwargs):
+    model = _rnet(BasicBlock, [2, 2, 2, 2], **kwargs)
+    if pretrained: 
+        print('Using pretrained weights.')
+        model.load("jittorhub://resnet18.pkl")
+    return model
 
-def Rnet34():
-    return _rnet(BasicBlock, [3, 4, 6, 3])
+@MODELS.register_module()
+def Rnet34(pretrained=False, **kwargs):
+    model = _rnet(BasicBlock, [3, 4, 6, 3], **kwargs)
+    if pretrained: 
+        print('Using pretrained weights.')
+        model.load("jittorhub://resnet34.pkl")
+    return model
 
-def Rnet50():
-    return _rnet(BottleNeck, [3, 4, 6, 3])
+@MODELS.register_module()
+def Rnet50(pretrained=False, **kwargs):
+    model = _rnet(BottleNeck, [3, 4, 6, 3], **kwargs)
+    if pretrained:
+        print('Using pretrained weights.')
+        model.load("jittorhub://resnet50.pkl")
+    return model
 
-def Rnet101():
-    return _rnet(BottleNeck, [3, 4, 23, 3])
+@MODELS.register_module()
+def Rnet101(pretrained=False, **kwargs):
+    model = _rnet(BottleNeck, [3, 4, 23, 3], **kwargs)
+    if pretrained:
+        print('Using pretrained weights.')
+        model.load("jittorhub://resnet101.pkl")
+    return model
 
-def Rnet152():
-    return _rnet(BottleNeck, [3, 8, 36, 3])
-
-if __name__ == '__main__':
-    model = Rnet50()
-    x = jt.random([10,3,224,224])
-    y = model(x) # [10, 1000]
-    print(y.shape)
+@MODELS.register_module()
+def Rnet152(pretrained=False, **kwargs):
+    model = _rnet(BottleNeck, [3, 8, 36, 3], **kwargs)
+    if pretrained: 
+        print('using pretrained weights')
+        model.load("jittorhub://resnet152.pkl")
+    return model
