@@ -1,6 +1,6 @@
 import argparse
 import jittor as jt
-from lib.runners import Runner, PMGRunner
+from lib.runners import RnetRunner, PMGRunner
 from lib.configs import init_cfg 
 
 
@@ -44,7 +44,7 @@ def main():
     if args.config_file:
         init_cfg(args.config_file)
 
-    runner = PMGRunner() if args.pmg else Runner()
+    runner = PMGRunner() if args.pmg else RnetRunner()
     
 
     if args.task == "train":

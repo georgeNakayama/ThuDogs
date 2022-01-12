@@ -1,11 +1,19 @@
-exp_name = 'PMG-sgd-consine-custdataset-500-epochs'
+exp_name = 'PMG-sgd-consine-custdataset-300-epochs'
 batch_size = 16
-max_epochs = 300
-save_interval = 25
+max_epoch = 300
+save_interval = 1
 val_interval = 1
 save_dir = 'Tsinghua-dogs/saved_weights/'
 work_dir = 'Tsinghua-dogs/runs/'
 num_classes=130
+lrs = dict(classifier_concat = 0.002, 
+        conv_block1= 0.002,
+        classifier1 = 0.002,
+        conv_block2 = 0.002,
+        classifier2 = 0.002,
+        conv_block3 = 0.002,
+        classifier3= 0.002,
+        features = 0.0002)
 
 train_dataset = dict(
     type = 'TsinghuaDogs',
@@ -15,7 +23,7 @@ train_dataset = dict(
     batch_size = 16
 )
 
-transforms_train = [
+train_transforms = [
     'HorizontalFlip',
     dict(
         type='Resize',
@@ -27,13 +35,14 @@ transforms_train = [
     )
 ]
 
-transforms_val = [
+val_transforms = [
     dict(
         type='Resize',
         shape = 550
     ),
     dict(
         type='Crop',
+        random=False,
         size=448
     )
 ]
@@ -60,6 +69,6 @@ optimizer = dict(
 )
 scheduler = dict(
     type = 'CosineAnnealingLR',
-    T_max = max_epochs,
+    T_max = max_epoch,
     T_mult = 1
 )

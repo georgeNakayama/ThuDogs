@@ -9,6 +9,7 @@ class PMG(nn.Module):
         super(PMG, self).__init__()
 
         self.features = build_from_cfg(model, MODELS, out_stages=[1, 2, 3, 4, 5])
+        #self.features = model
         self.max1 = nn.MaxPool2d(kernel_size=56, stride=56)
         self.max2 = nn.MaxPool2d(kernel_size=28, stride=28)
         self.max3 = nn.MaxPool2d(kernel_size=14, stride=14)
@@ -105,6 +106,19 @@ class PMG(nn.Module):
 
         pred = np.argmax(x_concat, axis=1)
         return pred
+
+    def params_dict(self):
+        lst = [
+            {'name': 'classifier_concat', 'params': self.classifier_concat.parameters()}, 
+            {'name': 'conv_block1', 'params': self.conv_block1.parameters()},
+            {'name': 'classifier1', 'params': self.classifier1.parameters()},
+            {'name': 'conv_block2', 'params': self.conv_block2.parameters()},
+            {'name': 'classifier2', 'params': self.classifier2.parameters()},
+            {'name': 'conv_block3', 'params': self.conv_block3.parameters()},
+            {'name': 'classifier3', 'params': self.classifier3.parameters()},
+            {'name': 'features', 'params': self.features.parameters()}
+            ]
+        return lst
 
     def execute(self, x):
         if self.is_training():
