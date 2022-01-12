@@ -7,7 +7,6 @@ import math
 from jittor.dataset import ImageFolder
 import lib.datasets.transforms as trans
 from tensorboardX import SummaryWriter
-from datetime import datetime
 import pickle
 from lib.utils.general import build_file
 from lib.configs import init_cfg, get_cfg
