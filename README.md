@@ -1,5 +1,5 @@
 # Networks to classify Tsinghua Dogs Dataset 
-This repository contains convolution neural networks that classfies species of dogs using Tsinghua Dogs Dataset. The dataset is provided in [this link](https://cg.cs.tsinghua.edu.cn/ThuDogs/). 
+This repository contains an implementation of convolution neural networks using Jittor that classfies species of dogs using Tsinghua Dogs Dataset. The dataset is provided in [this link](https://cg.cs.tsinghua.edu.cn/ThuDogs/). 
 # Requirements
 **Step1: Install Requirements**
 To install all the packages required to run the codes, enter the following to the terminal. 
