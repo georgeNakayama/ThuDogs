@@ -4,14 +4,10 @@ import numpy as np
 import sys, os
 import random
 import math
-from jittor.dataset import ImageFolder
-from tqdm import tqdm
-import lib.datasets.transforms as trans
-from tensorboardX import SummaryWriter
 import pickle
-from lib.utils.general import build_file
 from lib.configs import init_cfg, get_cfg
-from lib.utils import build_from_cfg, MODELS, SCHEDULERS, OPTIMS, DATASETS, TRANSFORMS
+from lib.utils import build_from_cfg, MODELS, SCHEDULERS, OPTIMS, DATASETS, TRANSFORMS, build_file, Logger
+from queue import Queue
 
 class Runner:
     def __init__(self):
@@ -24,15 +20,14 @@ class Runner:
         self.max_epoch = cfg.max_epoch if cfg.max_epoch else 50
         self.save_interval = cfg.save_interval if cfg.save_interval else 5
         self.val_interval = cfg.val_interval if cfg.val_interval else 1
-        self.save_dir = os.path.join(cfg.save_dir, self.exp_name) if cfg.save_dir else 'saved_weights/{}'.format(self.exp_name)
         self.resume_path = cfg.resume_path if cfg.resume_path else None
-        self.save_flag = 0
+        self.past_saves = Queue(maxsize=cfg.num_chk_points)
 
-
+        #building transforms from cfg file
         val_transforms = build_from_cfg(cfg.val_transforms, TRANSFORMS)
         train_transforms = build_from_cfg(cfg.train_transforms, TRANSFORMS)
 
-
+        #building datasets from cfg file
         print('Using train dataset: {}'.format(cfg.train_dataset['type']))
         self.train_dataset = build_from_cfg(cfg.train_dataset, DATASETS, transforms=train_transforms)
         print("total length is {}".format(self.train_dataset.total_len))
@@ -48,19 +43,19 @@ class Runner:
         print('Using optimizer: {}'.format(cfg.optimizer['type']))
         self.scheduler = build_from_cfg(cfg.scheduler, SCHEDULERS, optimizer=self.optimizer)
         print('Using scheduler: {}'.format(cfg.scheduler['type']))
-        self.logger = SummaryWriter(os.path.join(self.work_dir, 'Tensorboard'), flush_secs=10)
+        self.logger = Logger(save_dir=self.work_dir)
 
         if self.resume_path is not None:
             self.resume()
 
     def run(self):
         while not self.finished:
-            self.epoch += 1
             self.train()
-            if (self.epoch - 1) % self.val_interval == 0:
+            if self.epoch % self.val_interval == 0:
                 self.val()
-            if (self.epoch - 1) % self.save_interval == 0:
+            if self.epoch % self.save_interval == 0:
                 self.save()
+            self.epoch += 1
         self.save()
 
     @property
@@ -71,14 +66,36 @@ class Runner:
         if self.train_dataset is None:
             assert False, 'please set training dataset'
         self.model.train()
-        num_correct = 0
+        total_correct = 0
+        total = 0
+        train_losses = {}
         for batch_idx, (inputs, targets) in enumerate(self.train_dataset):
-            num_correct += self.train_per_batch(batch_idx, inputs, targets)
+            num_correct, loss_dict = self.train_per_batch(batch_idx, inputs, targets)
+            total_correct += num_correct
+            total += inputs.shape[0]
 
-        acc = num_correct / self.train_dataset.total_len
+            iteration = batch_idx + (self.epoch * len(self.train_dataset))
+            temp_losses = {}
+            for k, v in loss_dict.items():
+                if k not in train_losses.keys():
+                    train_losses[k] = 0.
+                train_losses[k] += v
+                temp_losses[k] = train_losses[k] / (batch_idx + 1)
+
+            self.logger.log(temp_losses, iteration, 'Averaged_loss')
+            self.logger.log(loss_dict, iteration, 'Loss_per_iter')
+            
+            if batch_idx % 50 == 0:
+                out_string = 'Train Epoch: {} [{}/{} ({:.0f}%)] '.format(self.epoch, batch_idx, len(self.train_dataset), 100. * batch_idx / len(self.train_dataset))
+                for k, v in loss_dict.items():
+                    out_string += '|Loss/{} : {:.3f} '.format(k, temp_losses[k])
+                out_string += '|Accuracy: {:.3f}%({}/{})'.format(100. * float(total_correct) / total, total_correct, total)
+                print(out_string)
+
+        acc = total_correct / total
         print('Train Epoch: {}\t Accuracy: {:.6f}'.format(self.epoch, acc))
-        self.logger.add_scalar('Accuracy/train', acc, self.epoch)
-        self.logger.add_scalar('Learning rate', self.optimizer.lr, self.epoch)
+        self.logger.log(acc, self.epoch, 'Accuracy/train')
+        self.logger.log(self.optimizer.lr, self.epoch, 'Learning rate')
 
     def train_per_batch(self, batch_idx, inputs, targets):
         raise NotImplementedError
@@ -90,19 +107,28 @@ class Runner:
             assert False, 'please set validation dataset'
         print('---------Evaluating---------')
         self.model.eval()
-        num_correct = 0
-        for batch_idx, (inputs, targets) in tqdm(enumerate(self.val_dataset)):
-            num_correct += self.val_per_batch(batch_idx, inputs, targets)
+        total_num_correct_dict = {}
+        total = 0
+        for batch_idx, (inputs, targets) in enumerate(self.val_dataset):
+            num_correct_dict = self.val_per_batch(batch_idx, inputs, targets)
+            for k, v in num_correct_dict.items():
+                if k not in total_num_correct_dict.keys():
+                    total_num_correct_dict[k] = 0
+                total_num_correct_dict += v 
+            total += inputs.shape[0]
 
-        acc = num_correct / self.val_dataset.total_len
-        print('Validation at epoch {}: \tAcc: {:.6f}'.format(self.epoch, acc))
-        self.logger.add_scalar('Accuracy/validation', acc, self.epoch)
+        accs = {k: v / total for k, v in total_num_correct_dict.items()}
+        out_string = 'Validation at epoch {}: '.format(self.epoch)
+        for k, v in accs.items():
+            out_string += '| Accuracy/{} : {}% ({:.3f}/{:.3f}) '.format(k, v, total_num_correct_dict[k], total)
+        print(out_string)
+        self.logger.log(accs, self.epoch, 'Accuracy')
 
     def val_per_batch(self, batch_idx, inputs, targets):
         raise NotImplementedError
 
     @jt.single_process_scope()
-    def save(self, how_many=2):
+    def save(self):
         save_data = {
             "meta":{
                 "epoch": self.epoch,
@@ -114,12 +140,14 @@ class Runner:
             "optimizer": self.optimizer.parameters()
         }
 
-        save_file = build_file(self.work_dir,prefix=f"checkpoints/ckpt_{self.save_flag}.pkl")
-        if os.path.exists(save_file):
-            os.remove(save_file)
+        save_file = build_file(self.work_dir,prefix=f"checkpoints/ckpt_{self.epoch}.pkl")
+
+        if self.past_saves.full():
+            os.remove(self.past_saves.get())
+        
         jt.save(save_data,save_file)
+        self.past_saves.put(save_file)
         print('data saved to file path {} for epoch {}'.format(save_file, self.epoch))
-        self.save_flag = (self.save_flag + 1) % how_many
 
     def load(self, load_path, model_only=False):
         resume_data = jt.load(load_path)

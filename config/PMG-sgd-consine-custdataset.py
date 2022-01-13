@@ -1,6 +1,6 @@
-exp_name = 'PMG-sgd-consine-custdataset-20-epochs'
+exp_name = 'PMG-sgd-consine-custdataset-200-epochs'
 batch_size = 16
-max_epoch = 20
+max_epoch = 200
 save_interval = 1
 val_interval = 1
 save_dir = 'ThuDogs/saved_weights/'
@@ -72,3 +72,5 @@ scheduler = dict(
     T_max = max_epoch,
     T_mult = 1
 )
+
+num_chk_points = 2
