@@ -104,8 +104,7 @@ class PMG(nn.Module):
         x_concat = jt.concat((xl1, xl2, xl3), -1)
         x_concat = self.classifier_concat(x_concat)
 
-        pred = np.argmax(x_concat, axis=1)
-        return pred
+        return xc1, xc2, xc3, x_concat
 
     def params_dict(self):
         lst = [

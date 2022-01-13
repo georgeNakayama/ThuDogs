@@ -135,13 +135,14 @@ class ColorAugmentation:
 @TRANSFORMS.register_module()
 class Normalize:
     def __init__(self):
-        pass 
+        pass
     def __call__(self, image, bboxes=None):
-        image_array = np.asarray(image).astype(np.float32)
-        mean = image_array.mean(axis = (0, 1), dtype=np.float32)
+        image_array = np.asarray(image).astype(np.float32) / 255.
+        mean = image_array.mean(axis = (0, 1))
+        std = image_array.std(axis=(0, 1))
         if bboxes is None:
-            return (image_array - mean)
-        return (image_array - mean), bboxes
+            return (image_array - mean) / std
+        return (image_array - mean) / std, bboxes
 
 @TRANSFORMS.register_module()
 class Crop:
