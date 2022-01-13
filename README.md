@@ -45,6 +45,6 @@ To resume a training using checkpoints, add ```resume_path={you_checkpointspath}
 
 The second network we support is [PMG](https://arxiv.org/pdf/2003.03836.pdf) where the training can be run by typing 
 ```shell
-python tools/main.py --config-file config/rnet50-sgd-consine-custdataset.py --task=train --pmg
+python tools/main.py --config-file config/PMG-sgd-consine-custdataset.py --task=train --pmg
 ```
 to the shell. 
