@@ -114,7 +114,7 @@ class Runner:
             for k, v in num_correct_dict.items():
                 if k not in total_num_correct_dict.keys():
                     total_num_correct_dict[k] = 0
-                total_num_correct_dict += v 
+                total_num_correct_dict[k] += v 
             total += inputs.shape[0]
 
         accs = {k: v / total for k, v in total_num_correct_dict.items()}

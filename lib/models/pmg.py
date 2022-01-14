@@ -60,7 +60,7 @@ class PMG(nn.Module):
             nn.Linear(feature_size, num_classes),
         )
 
-    def execute_train(self, x):
+    def execute(self, x):
         xf1, xf2, xf3, xf4, xf5 = self.features(x)
 
         xl1 = self.conv_block1(xf3)
@@ -84,28 +84,6 @@ class PMG(nn.Module):
 
         return xc1, xc2, xc3, x_concat
 
-
-    def execute_test(self, x):
-        xf1, xf2, xf3, xf4, xf5 = self.features(x)
-
-        xl1 = self.conv_block1(xf3)
-        xl2 = self.conv_block2(xf4)
-        xl3 = self.conv_block3(xf5)
-        
-        xl1 = self.max1(xl1)
-        xl1 = xl1.view(xl1.size(0), -1)
-
-        xl2 = self.max2(xl2)
-        xl2 = xl2.view(xl2.size(0), -1)
-
-        xl3 = self.max3(xl3)
-        xl3 = xl3.view(xl3.size(0), -1)
-          
-        x_concat = jt.concat((xl1, xl2, xl3), -1)
-        x_concat = self.classifier_concat(x_concat)
-
-        return xc1, xc2, xc3, x_concat
-
     def params_dict(self):
         lst = [
             {'name': 'classifier_concat', 'params': self.classifier_concat.parameters()}, 
@@ -118,12 +96,6 @@ class PMG(nn.Module):
             {'name': 'features', 'params': self.features.parameters()}
             ]
         return lst
-
-    def execute(self, x):
-        if self.is_training():
-            return self.execute_train(x)
-        else: 
-            return self.execute_test(x)
     
     
 class BasicConv(nn.Module):
